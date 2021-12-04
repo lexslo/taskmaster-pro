@@ -13,6 +13,8 @@ var createTask = function(taskText, taskDate, taskList) {
   // append span and p element to parent li
   taskLi.append(taskSpan, taskP);
 
+  // check due date, ensure has all proper classes before writing to page
+  auditTask(taskLi);
 
   // append to ul list on the page
   $("#list-" + taskList).append(taskLi);
@@ -79,6 +81,12 @@ $("#task-form-modal .btn-primary").click(function() {
   }
 });
 
+// add date picker to task entry modal for due date input field
+$("#modalDueDate").datepicker({
+  // set the minimum date to be one day from the current date
+  minDate: 1
+});
+
 // task text was clicked
 $(".list-group").on("click", "p", function() {
   // get current text of p element
@@ -136,14 +144,24 @@ $(".list-group").on("click", "span", function() {
     .attr("type", "text")
     .addClass("form-control")
     .val(date);
+
   $(this).replaceWith(dateInput);
+
+  // enable jQuery ui datepicker
+  dateInput.datepicker({
+    minDate: 1,
+    onClose: function() {
+      // when calendar is closed, force a "change" event on the `dateInput`
+      $(this).trigger("change");
+    }
+  });
 
   // automatically bring up the calendar
   dateInput.trigger("focus");
 });
 
 // value of due date was changed
-$(".list-group").on("blur", "input[type='text']", function() {
+$(".list-group").on("change", "input[type='text']", function() {
   var date = $(this).val();
 
   // get status type and position in the list
@@ -164,6 +182,9 @@ $(".list-group").on("blur", "input[type='text']", function() {
     .addClass("badge badge-primary badge-pill")
     .text(date);
     $(this).replaceWith(taskSpan);
+
+  // Pass task's <li> element into auditTask() to check new due date
+  auditTask($(taskSpan).closest(".list-group-item"));
 });
 
 // add drag and drop sortable feature to all ul's with list-group class
@@ -231,7 +252,28 @@ $("#trash").droppable({
   },
   out: function(event,ui) {
   }
-})
+});
+
+// add color codes to tasks, accept the task's <li> element as a parameter
+var auditTask = function (taskEl) {
+  //console.log(taskEl);
+  // get date from task element
+  var date = $(taskEl).find("span").text().trim();
+
+  // convert to object moment at 5:00pm
+  var time = moment(date, "L").set("hour", 17);
+
+  // remove old classes from element
+  $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+
+  // apply danger class if time is near or past due
+  if (moment().isAfter(time)) {
+    $(taskEl).addClass("list-group-item-danger");
+  }
+  else if (Math.abs(moment().diff(time, "days")) <= 2) {
+    $(taskEl).addClass("list-group-item-warning");
+  }
+}
 
 // remove all tasks
 $("#remove-tasks").on("click", function() {
