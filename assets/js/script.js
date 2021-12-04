@@ -45,9 +45,6 @@ var saveTasks = function() {
   localStorage.setItem("tasks", JSON.stringify(tasks));
 };
 
-
-
-
 // modal was triggered
 $("#task-form-modal").on("show.bs.modal", function() {
   // clear values
@@ -168,6 +165,73 @@ $(".list-group").on("blur", "input[type='text']", function() {
     .text(date);
     $(this).replaceWith(taskSpan);
 });
+
+// add drag and drop sortable feature to all ul's with list-group class
+$(".card .list-group").sortable({
+  // link the sortable lists with any other lists that have the same class
+  connectWith: $(".card .list-group"),
+  scroll: false,
+  tolerance: "pointer",
+  helper: "clone", // create a copy of the dragged element and move the copy instead of the original
+  activate: function(event) {
+    // trigger once for all connected lists as soon as dragging starts
+  },
+  deactivate: function(event) {
+    // trigger once for all connected lists as soon as dragging stops
+  },
+  over: function(event) {
+    // trigger when a dragged item enters a connected list
+  },
+  out: function(event) {
+    // trigger when a dragged item leaves a connected list
+  },
+  // triggers when the contents of a list have changed
+  // e.g., the items were re-ordered, an item was removed, or an item was added
+  update: function(event) {
+    // array to store the task data in
+    var tempArr = [];
+    // run a callback function for every item/element in the array
+    $(this).children().each(function(){
+      // nested $(this) refers to the child element at that index (the task <li> element)
+      var text = $(this)
+        .find("p")
+        .text()
+        .trim();
+
+      var date = $(this)
+        .find("span")
+        .text()
+        .trim();
+
+      // add task data to the array as an object
+      tempArr.push({
+        text: text,
+        date: date
+      });
+    });
+    // trim down list's ID to match object property
+    var arrName = $(this)
+      .attr("id")
+      .replace("list-", "");
+
+    // update array on tasks object and save
+    tasks[arrName] = tempArr;
+    saveTasks();
+  }
+});
+
+// add ability to drag task and drop in trash area
+$("#trash").droppable({
+  accept: ".card .list-group-item",
+  tolerance: "touch",
+  drop: function(event, ui) {
+    ui.draggable.remove();
+  },
+  over: function(event, ui) {
+  },
+  out: function(event,ui) {
+  }
+})
 
 // remove all tasks
 $("#remove-tasks").on("click", function() {
